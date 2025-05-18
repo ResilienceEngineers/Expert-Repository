@@ -29,25 +29,31 @@
 
         /* --- Promotional Banner Styles --- */
         .promo-banner {
-            background-color: #1e3a8a; /* A darker blue, adjust as needed */
-            color: #ffffff;
+            background-color: #eef2ff; /* Lighter Indigo/Blue for a softer but distinct look - bg-indigo-50 */
+            color: #3730a3; /* Darker Indigo for text - text-indigo-800 */
             padding: 1rem 1.5rem;
-            margin-bottom: 1.5rem;
-            border-radius: 0.5rem;
+            margin-top: 1.5rem; /* Added margin-top to separate from header */
+            margin-bottom: 1.5rem; /* Existing margin-bottom for separation from nav */
+            border-radius: 0.5rem; /* rounded-lg */
             text-align: center;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #c7d2fe; /* border-indigo-300 */
+            box-shadow: 0 2px 4px 0 rgba(0,0,0,0.05); /* subtle shadow */
         }
         .promo-banner p {
             margin-bottom: 0.75rem;
-            font-size: 0.95rem;
+            font-size: 0.95rem; /* text-sm or text-base */
+            line-height: 1.5;
+        }
+        .promo-banner p:last-child {
+            margin-bottom: 0;
         }
         .promo-banner a {
-            color: #93c5fd; /* Lighter blue for links */
+            color: #4338ca; /* Slightly darker indigo for links, for better contrast - text-indigo-700 */
             text-decoration: underline;
-            font-weight: 500;
+            font-weight: 600; /* semibold */
         }
         .promo-banner a:hover {
-            color: #e0f2fe; /* Even lighter blue on hover */
+            color: #312e81; /* Darkest indigo on hover - text-indigo-900 */
         }
 
 
@@ -75,44 +81,41 @@
              padding: 1.5rem; background-color: #f9fafb;
              border-radius: 0.5rem; border: 1px solid #e5e7eb;
         }
-        .filter-group { margin-bottom: 1rem; } /* Reduced margin between groups */
+        .filter-group { margin-bottom: 1rem; }
         .filter-group:last-child { margin-bottom: 0; }
-        .filter-label-container { /* Container for label and toggle button */
+        .filter-label-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 0.75rem;
-            cursor: pointer; /* Make the whole label area clickable */
+            cursor: pointer;
         }
         .filter-label {
              display: block; font-size: 1rem; font-weight: 600;
              color: #1f2937;
-             margin-bottom: 0; /* Removed margin as it's on container now */
+             margin-bottom: 0;
         }
-        /* Toggle Button Styles */
         .toggle-button {
             background: none; border: none; padding: 0.25rem; cursor: pointer;
             transition: transform 0.2s ease-in-out;
         }
         .toggle-button svg {
-            width: 1rem; height: 1rem; stroke: #4b5563; /* gray-600 */
+            width: 1rem; height: 1rem; stroke: #4b5563;
         }
         .toggle-button[aria-expanded="false"] {
             transform: rotate(-90deg);
         }
-        .filter-controls-container { /* Container for the actual filter buttons */
+        .filter-controls-container {
              transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
              overflow: hidden;
-             max-height: 1000px; /* Set a large max-height for expanded state */
+             max-height: 1000px;
              opacity: 1;
         }
         .filter-controls-container.hidden {
              max-height: 0;
              opacity: 0;
-             /* We use max-height and opacity for transition instead of display:none */
         }
 
-        /* Control buttons (filters/sort) styling */
         .control-button {
             background-color: #f3f4f6; color: #374151; padding: 0.5rem 1rem;
             border-radius: 9999px; font-size: 0.875rem; font-weight: 500;
@@ -126,7 +129,6 @@
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             font-weight: 600;
         }
-        /* Main Content Area */
         .item-card {
             background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 0.5rem;
             padding: 1.25rem; margin-bottom: 1rem;
@@ -189,17 +191,17 @@
 
     <div class="main-container">
 
-        <div class="promo-banner">
-            <p>Do you want more interactive Mini-Tools, insights in risk and resilience?<br>
-            Check out my Gumroad site: <a href="https://resilience13.gumroad.com/?_gl=1*1k9p3f9*_ga*ODcxNTg4ODM1LjE3NDQ2NTk3MTY.*_ga_6LJN6D94N6*czE3NDc1OTczNTgkbzI5JGcxJHQxNzQ3NTk5MDUxJGowJGwwJGgw" target="_blank" rel="noopener noreferrer">https://resilience13.gumroad.com/</a></p>
-            <p>If you want to join a community, with insights, readers corner, access to the Resilience AI Hub and more, join the "Resilience Engineers Community":<br>
-            <a href="https://resilience-engineers-community.mn.co/spaces/18800867/feed" target="_blank" rel="noopener noreferrer">https://resilience-engineers-community.mn.co/</a></p>
-        </div>
-
         <header class="mb-8 pb-6 border-b border-gray-300">
             <h1 class="text-3xl md:text-4xl font-bold text-blue-900 mb-3 text-center">Interactive Risk & Resilience Tool</h1>
             <p class="text-lg text-gray-700 text-center">Insights from Taleb, Bar-Yam, Wolfram, Deutsch & Peters</p>
         </header>
+
+        <div class="promo-banner">
+            <p>Do you want more interactive Mini-Tools, insights in risk and resilience?<br>
+            Check out my Gumroad site: <a href="https://resilience13.gumroad.com/?_gl=1*1k9p3f9*_ga*ODcxNTg4ODM1LjE3NDQ2NTk3MTY.*_ga_6LJN6D94N6*czE3NDc1OTczNTgkbzI5JGcxJHQxNzQ3NTk5MDUxJGowJGwwJGgw" target="_blank" rel="noopener noreferrer">resilience13.gumroad.com</a></p>
+            <p>If you want to join a community, with insights, readers corner, access to the Resilience AI Hub and more, join the "Resilience Engineers Community":<br>
+            <a href="https://resilience-engineers-community.mn.co/spaces/18800867/feed" target="_blank" rel="noopener noreferrer">Resilience Engineers Community</a></p>
+        </div>
 
         <nav class="text-center mb-10">
             <button id="tab-content" class="nav-button active">Content Explorer</button>
@@ -412,7 +414,7 @@
         let graphLinks = [];
 
         // --- Functions for Content View ---
-        function createItemCard(item) { /* ... (no changes needed) ... */
+        function createItemCard(item) {
              const card = document.createElement('div');
             card.className = 'item-card';
             const textNode = document.createTextNode(item.text);
@@ -430,7 +432,7 @@
             card.appendChild(tagContainer);
             return card;
         }
-        function renderItems() { /* ... (no changes needed) ... */
+        function renderItems() {
              let filteredItems = allItems.filter(item =>
                  (currentCategoryFilter === 'all' || item.category === currentCategoryFilter) &&
                  (currentSourceFilter === 'all' || item.source === currentSourceFilter)
@@ -462,7 +464,7 @@
             if (behaviorCount === 0) behaviorListEl.innerHTML = '<div class="p-4 text-center text-gray-500">No behaviors match filters.</div>';
             if (ritualCount === 0) ritualListEl.innerHTML = '<div class="p-4 text-center text-gray-500">No rituals match filters.</div>';
         }
-        function createFilterButtons(element, dataKey, items) { /* ... (no changes needed) ... */
+        function createFilterButtons(element, dataKey, items) {
              const uniqueValues = [...new Set(items.map(item => item[dataKey]))].sort();
             const allButton = element.querySelector(`[data-${dataKey}="all"]`);
             uniqueValues.forEach(value => {
@@ -478,7 +480,7 @@
                   allButton.addEventListener('click', handleFilterClick);
              }
         }
-        function handleFilterClick(event) { /* ... (no changes needed) ... */
+        function handleFilterClick(event) {
              const button = event.target;
             const filterType = Object.keys(button.dataset)[0];
             const filterValue = button.dataset[filterType];
@@ -492,7 +494,7 @@
             }
             renderItems();
         }
-        function handleSortClick(event) { /* ... (no changes needed) ... */
+        function handleSortClick(event) {
              currentSort = event.target.dataset.sort;
             sortButtons.forEach(btn => {
                   btn.classList.toggle('active', btn.dataset.sort === currentSort);
@@ -500,7 +502,6 @@
             renderItems();
         }
 
-        /** Toggles the visibility of a filter group */
         function toggleFilterGroup(labelContainer) {
             const button = labelContainer.querySelector('.toggle-button');
             const controlsId = button.getAttribute('aria-controls');
@@ -518,17 +519,17 @@
 
 
         // --- Functions for Graph View ---
-        function prepareGraphData() { /* ... (no changes needed) ... */
-             graphNodes = []; // Clear existing nodes
-             graphLinks = []; // Clear existing links
+        function prepareGraphData() {
+             graphNodes = [];
+             graphLinks = [];
             const uniqueSources = new Set();
             const uniqueCategories = new Set();
-            const sourceCategoryLinksMap = new Map(); // Use Map for easier link generation
+            const sourceCategoryLinksMap = new Map();
 
             allItems.forEach(item => {
                  uniqueSources.add(item.source);
                  uniqueCategories.add(item.category);
-                 const linkKey = `${item.source}|${item.category}`; // Unique key for source-category pair
+                 const linkKey = `${item.source}|${item.category}`;
                  if (!sourceCategoryLinksMap.has(linkKey)) {
                      sourceCategoryLinksMap.set(linkKey, { source: item.source, target: item.category });
                  }
@@ -537,10 +538,10 @@
             uniqueSources.forEach(source => graphNodes.push({ id: source, type: 'source', name: source }));
             uniqueCategories.forEach(category => graphNodes.push({ id: category, type: 'category', name: category }));
 
-            graphLinks = Array.from(sourceCategoryLinksMap.values()); // Convert map values to array
+            graphLinks = Array.from(sourceCategoryLinksMap.values());
             console.log("Graph data prepared:", graphNodes.length, "nodes,", graphLinks.length, "links");
         }
-        function drawGraph() { /* ... (no changes needed) ... */
+        function drawGraph() {
              let width = graphContainer.clientWidth;
             let height = graphContainer.clientHeight;
             if (!width || !height || width < 50 || height < 50) {
@@ -596,7 +597,7 @@
             graphInitialized = true;
             console.log("Graph drawn successfully.");
         }
-        function drag(simulationInstance) { /* ... (no changes needed) ... */
+        function drag(simulationInstance) {
              function dragstarted(event, d) {
                  if (!event.active) simulationInstance.alphaTarget(0.3).restart();
                  d.fx = d.x; d.fy = d.y;
@@ -613,7 +614,7 @@
                  .on("drag", dragged)
                  .on("end", dragended);
         }
-        function handleMouseOver(event, d) { /* ... (no changes needed) ... */
+        function handleMouseOver(event, d) {
              const allNodes = svg.selectAll('.node');
             const allLinks = svg.selectAll('.link');
             allNodes.style('opacity', 0.3);
@@ -627,7 +628,7 @@
                           .style('opacity', 1);
                  });
         }
-        function handleMouseOut(event, d) { /* ... (no changes needed) ... */
+        function handleMouseOut(event, d) {
              svg.selectAll('.node').style('opacity', 1);
             svg.selectAll('.link')
                .style('stroke-opacity', 0.7)
@@ -635,7 +636,7 @@
         }
 
         // --- View Switching Logic ---
-        function showView(viewId) { /* ... (no changes needed) ... */
+        function showView(viewId) {
              pageContent.classList.add('hidden');
             pageGraph.classList.add('hidden');
             tabContent.classList.remove('active');
@@ -666,27 +667,18 @@
             console.log("Initializing tool...");
             yearEl.textContent = new Date().getFullYear();
 
-            // Initialize Content View
-            console.log("Initializing content view elements...");
             createFilterButtons(categoryFiltersEl, 'category', allItems);
             createFilterButtons(sourceFiltersEl, 'source', allItems);
             sortButtons.forEach(button => {
                  button.addEventListener('click', handleSortClick);
             });
-            renderItems(); // Initial render
+            renderItems();
 
-            // Prepare graph data once on load
             prepareGraphData();
 
-            // Add event listeners for tabs
             tabContent.addEventListener('click', () => showView('content'));
             tabGraph.addEventListener('click', () => showView('graph'));
 
-            // Add event listeners for filter group toggling (delegated via onclick in HTML)
-            // Note: If adding many groups, event delegation might be more efficient,
-            // but this is simple for three groups.
-
-            // Graph resize handling
             let resizeTimer;
             window.addEventListener('resize', () => {
                  clearTimeout(resizeTimer);
@@ -701,12 +693,10 @@
                  }, 250);
             });
 
-            // Show the initial view
             showView('content');
             console.log("Initialization complete.");
         }
 
-        // Run initialization when the DOM is fully loaded
         document.addEventListener('DOMContentLoaded', initialize);
 
     </script>
