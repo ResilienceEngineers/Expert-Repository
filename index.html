@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Risk & Resilience Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- Base Styles --- */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* gray-100 */
+            color: #1f2937; /* gray-800 */
+            line-height: 1.6;
+        }
+        .hidden { display: none; }
+        .main-container {
+            max-width: 80rem; margin-left: auto; margin-right: auto;
+            background-color: #ffffff; padding: 1.5rem 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border: 1px solid #e5e7eb;
+        }
+        @media (min-width: 768px) { .main-container { padding: 2rem 2.5rem; } }
+
+        /* --- Navigation Styles --- */
+        .nav-button {
+            background-color: #e5e7eb; color: #374151; padding: 0.6rem 1.2rem;
+            border-radius: 0.375rem; font-size: 0.9rem; font-weight: 500;
+            margin: 0 0.25rem; border: 1px solid transparent; transition: all 0.2s ease-in-out;
+            cursor: pointer; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        }
+        .nav-button:hover { background-color: #d1d5db; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); }
+        .nav-button.active {
+            background-color: #2563eb; color: #ffffff; border-color: #1d4ed8;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        /* --- Content View Specific Styles --- */
+        /* Sidebar */
+        .sidebar {
+             position: sticky; top: 1.5rem; align-self: start;
+             max-height: calc(100vh - 3rem); overflow-y: auto;
+             padding-right: 0.5rem;
+        }
+        .controls-section {
+             padding: 1.5rem; background-color: #f9fafb;
+             border-radius: 0.5rem; border: 1px solid #e5e7eb;
+        }
+        .filter-group { margin-bottom: 1rem; } /* Reduced margin between groups */
+        .filter-group:last-child { margin-bottom: 0; }
+        .filter-label-container { /* Container for label and toggle button */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            cursor: pointer; /* Make the whole label area clickable */
+        }
+        .filter-label {
+             display: block; font-size: 1rem; font-weight: 600;
+             color: #1f2937;
+             margin-bottom: 0; /* Removed margin as it's on container now */
+        }
+        /* Toggle Button Styles */
+        .toggle-button {
+            background: none; border: none; padding: 0.25rem; cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+        }
+        .toggle-button svg {
+            width: 1rem; height: 1rem; stroke: #4b5563; /* gray-600 */
+        }
+        .toggle-button[aria-expanded="false"] {
+            transform: rotate(-90deg);
+        }
+        .filter-controls-container { /* Container for the actual filter buttons */
+             transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+             overflow: hidden;
+             max-height: 1000px; /* Set a large max-height for expanded state */
+             opacity: 1;
+        }
+        .filter-controls-container.hidden {
+             max-height: 0;
+             opacity: 0;
+             /* We use max-height and opacity for transition instead of display:none */
+        }
+
+        /* Control buttons (filters/sort) styling */
+        .control-button {
+            background-color: #f3f4f6; color: #374151; padding: 0.5rem 1rem;
+            border-radius: 9999px; font-size: 0.875rem; font-weight: 500;
+            margin: 0.25rem; border: 1px solid #d1d5db; transition: all 0.2s ease-in-out;
+            cursor: pointer; line-height: 1; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            width: fit-content;
+        }
+        .control-button:hover { background-color: #e5e7eb; border-color: #9ca3af; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); }
+        .control-button.active {
+            background-color: #3b82f6; color: #ffffff; border-color: #1d4ed8;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            font-weight: 600;
+        }
+        /* Main Content Area */
+        .item-card {
+            background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 0.5rem;
+            padding: 1.25rem; margin-bottom: 1rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+            transition: all 0.2s ease-in-out;
+        }
+        .item-card:hover {
+             box-shadow: 0 6px 12px -1px rgba(0, 0, 0, 0.1), 0 4px 8px -1px rgba(0, 0, 0, 0.06);
+             transform: translateY(-3px);
+             border-left: 4px solid #2563eb;
+             padding-left: calc(1.25rem - 4px);
+        }
+        .content-heading {
+            font-size: 1.5rem; font-weight: 600; color: #1e40af;
+            margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 2px solid #9ca3af;
+        }
+        .item-count {
+             margin-top: 1.5rem; padding-top: 0.75rem; text-align: right;
+             font-style: italic; color: #4b5563; font-size: 0.875rem;
+             border-top: 1px solid #e5e7eb;
+        }
+        .tag-container { margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .category-tag, .source-tag {
+            display: inline-block; padding: 0.25rem 0.6rem; border-radius: 0.25rem;
+            font-size: 0.75rem; font-weight: 600; line-height: 1.2;
+            border: 1px solid transparent;
+        }
+        .category-tag { background-color: #e0e7ff; color: #3730a3; border-color: #c7d2fe; }
+        .source-tag { background-color: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+
+        /* --- Graph View Specific Styles --- */
+        #graph-container {
+            width: 100%; max-width: 900px; aspect-ratio: 4 / 3;
+            background-color: #f9fafb; border-radius: 0.75rem;
+            box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05); border: 1px solid #e5e7eb;
+            overflow: hidden; position: relative; margin: 1.5rem auto;
+        }
+        #graph-container svg { display: block; width: 100%; height: 100%; }
+        .link { stroke: #9ca3af; stroke-opacity: 0.7; stroke-width: 2px; transition: stroke 0.2s ease-in-out, stroke-width 0.2s ease-in-out; }
+        .node circle { stroke: #ffffff; stroke-width: 2px; transition: transform 0.2s ease-in-out, filter 0.2s ease-in-out; }
+        .node:hover circle { transform: scale(1.15); filter: brightness(1.1); }
+        .node:hover ~ .node circle { filter: brightness(0.95); }
+        .node:hover ~ .links .link { stroke-opacity: 0.3; }
+        .node text {
+            font-size: 11px; font-weight: 500; fill: #111827;
+            pointer-events: none; text-anchor: middle; dominant-baseline: central;
+            paint-order: stroke; stroke: #f9fafb; stroke-width: 2px;
+            stroke-linecap: butt; stroke-linejoin: miter;
+        }
+        .node.source circle { fill: #3b82f6; }
+        .node.category circle { fill: #10b981; }
+        .graph-description {
+             margin-bottom: 1.5rem; text-align: center; color: #4b5563;
+             max-width: 700px; margin-left: auto; margin-right: auto;
+        }
+
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="main-container">
+
+        <header class="mb-8 pb-6 border-b border-gray-300">
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-900 mb-3 text-center">Interactive Risk & Resilience Tool</h1>
+            <p class="text-lg text-gray-700 text-center">Insights from Taleb, Bar-Yam, Wolfram, Deutsch & Peters</p>
+        </header>
+
+        <nav class="text-center mb-10">
+            <button id="tab-content" class="nav-button active">Content Explorer</button>
+            <button id="tab-graph" class="nav-button">Network Graph</button>
+        </nav>
+
+        <div id="page-content" class="page-view">
+             <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 xl:gap-12">
+
+                <aside class="lg:col-span-1">
+                    <div class="sidebar controls-section">
+                        <div class="grid grid-cols-1 gap-y-4"> <div class="filter-group">
+                                <div class="filter-label-container" onclick="toggleFilterGroup(this)">
+                                    <label id="category-label" class="filter-label">Filter by Category:</label>
+                                    <button class="toggle-button" aria-expanded="true" aria-controls="category-filters-container">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div id="category-filters-container" class="filter-controls-container">
+                                    <div id="category-filters" class="flex flex-wrap gap-2">
+                                        <button class="control-button active" data-category="all" aria-labelledby="category-label">All</button>
+                                        </div>
+                                </div>
+                            </div>
+                             <div class="filter-group">
+                                <div class="filter-label-container" onclick="toggleFilterGroup(this)">
+                                    <label id="source-label" class="filter-label">Filter by Source:</label>
+                                     <button class="toggle-button" aria-expanded="true" aria-controls="source-filters-container">
+                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                           <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                         </svg>
+                                     </button>
+                                </div>
+                                <div id="source-filters-container" class="filter-controls-container">
+                                    <div id="source-filters" class="flex flex-wrap gap-2">
+                                        <button class="control-button active" data-source="all" aria-labelledby="source-label">All</button>
+                                         </div>
+                                </div>
+                            </div>
+                            <div class="filter-group">
+                                <div class="filter-label-container" onclick="toggleFilterGroup(this)">
+                                    <label id="sort-label" class="filter-label">Sort:</label>
+                                    <button class="toggle-button" aria-expanded="true" aria-controls="sort-controls-container">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div id="sort-controls-container" class="filter-controls-container">
+                                    <div id="sort-controls" class="flex flex-wrap gap-2">
+                                         <button class="control-button" data-sort="az" aria-labelledby="sort-label">A-Z</button>
+                                         <button class="control-button" data-sort="za" aria-labelledby="sort-label">Z-A</button>
+                                         <button class="control-button active" data-sort="default" aria-labelledby="sort-label">Default</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="lg:col-span-3">
+                    <main class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+                        <section id="behaviors">
+                            <h2 class="content-heading text-center md:text-left">Core Behaviors</h2>
+                            <div id="behavior-list" class="space-y-0">
+                                <div class="p-4 text-center text-gray-500">Loading behaviors...</div>
+                            </div>
+                             <p id="behavior-count" class="item-count">Total Behaviors Displayed: 0</p>
+                        </section>
+                        <section id="rituals">
+                            <h2 class="content-heading text-center md:text-left">Common Rituals</h2>
+                            <div id="ritual-list" class="space-y-0">
+                                <div class="p-4 text-center text-gray-500">Loading rituals...</div>
+                            </div>
+                             <p id="ritual-count" class="item-count">Total Rituals Displayed: 0</p>
+                        </section>
+                    </main>
+                </div>
+            </div>
+        </div> <div id="page-graph" class="page-view hidden">
+             <p class="graph-description">This graph shows the connections between expert sources and the categories of behaviors/rituals they contributed to. Drag nodes to rearrange. Hover over nodes for emphasis.</p>
+             <div id="graph-container">
+                 <svg id="network-graph"></svg>
+             </div>
+        </div> <footer class="mt-16 text-center text-sm text-gray-500 border-t border-gray-300 pt-8">
+            <p>Analysis based on multiple podcast transcripts and papers. Methodology inspired by John Cutler.</p>
+            <p>&copy; <span id="year"></span> [Your Name/Organization Name]</p>
+        </footer>
+
+    </div> <script>
+        // --- Data ---
+        const allItems = [
+             // Behaviors (Mindsets & Actions) from Experts
+            { text: "Assume Extremistan unless proven otherwise: Default to assuming fat tails (large deviations possible) unless strong physical/biological constraints exist.", type: 'behavior', category: 'Mindset', source: 'Taleb' },
+            { text: "Embrace Volatility & Uncertainty: Actively accept variability and the unknown; learn to love volatility for the information it provides and its role in adaptation.", type: 'behavior', category: 'Mindset', source: 'Taleb' },
+            { text: "Control Your Response: Recognize that while external events are uncontrollable, your reaction and perception are choices.", type: 'behavior', category: 'Mindset', source: 'Taleb' },
+            { text: "Seek Growth Through Adversity (Growth Mindset): Frame challenges, failures, stressors, and pain as essential learning opportunities for becoming stronger (like muscles tearing and regrowing).", type: 'behavior', category: 'Learning', source: 'Taleb' },
+            { text: "Be the Fire, Wish for the Wind: Aim not just to withstand stress, but to actively thrive and strengthen from it, like a fire fueled by wind.", type: 'behavior', category: 'Mindset', source: 'Taleb' },
+            { text: "Adopt a Hero Mentality (vs. Victim): Consciously choose to face difficulties proactively and constructively, moment-to-moment.", type: 'behavior', category: 'Mindset', source: 'Taleb' },
+            { text: "Get Comfortable Being Uncomfortable: Intentionally expose yourself to manageable stressors and discomfort to expand tolerance and capacity.", type: 'behavior', category: 'Action', source: 'Taleb' },
+            { text: "Mentor, Don't Blame: When others struggle or fail, focus on helping them learn and improve rather than assigning blame. Ask 'How can I help?'", type: 'behavior', category: 'Interaction', source: 'Taleb' },
+            { text: "Wear Scars as Medals: View past failures (like financial losses with skin in the game) and overcome challenges as evidence of resilience and learning, not sources of shame.", type: 'behavior', category: 'Mindset', source: 'Taleb' },
+            { text: "Maintain Optionality: Actively create and preserve choices and alternatives to avoid being trapped in fragile situations. Avoid dependence on single paths or suppliers.", type: 'behavior', category: 'Strategy', source: 'Taleb' },
+            { text: "Believe Obstacles Make Me Stronger (OMMS): Internalize the idea that facing and overcoming challenges is the primary path to increased strength and capability.", type: 'behavior', category: 'Mindset', source: 'Taleb' },
+            { text: "Pursue Post-Traumatic/Adversarial Growth: Intentionally seek positive psychological and capability changes following stressful or challenging events.", type: 'behavior', category: 'Learning', source: 'Taleb' },
+            { text: "Focus on Avoiding Ruin (Via Negativa): Prioritize eliminating downside risk (fragility, tail risk) before seeking upside gain. Don't be harmed by silent risk.", type: 'behavior', category: 'Strategy', source: 'Taleb' },
+            { text: "Distrust Models & Forecasts in Fat-Tailed Domains: Recognize the severe limitations of standard models (Gaussian) and point forecasts when dealing with unpredictable, high-impact events. Understand probability is a kernel, not just a number.", type: 'behavior', category: 'Decision Making', source: 'Taleb' },
+            { text: "Value Skin in the Game: Trust advice/actions from those who bear the consequences of being wrong; distrust those with no skin in the game (like CEOs with bonuses but no downside).", type: 'behavior', category: 'Decision Making', source: 'Taleb' },
+            { text: "Think in Terms of Payoffs, Not Just Probabilities: Understand that low-probability events can have massive consequences (fat tails), making the potential payoff structure (convexity) more important than the frequency.", type: 'behavior', category: 'Decision Making', source: 'Taleb' },
+            { text: "Prefer Robustness/Antifragility over Optimization: Avoid pseudo-optimization (like supply chain concentration) that creates hidden fragilities; aim for systems that can withstand or benefit from shocks.", type: 'behavior', category: 'Strategy', source: 'Taleb' },
+            { text: "Panic Early (If You Must Panic): Take decisive action early when facing potential systemic, fat-tailed risks (like pandemics), rather than waiting for certainty or assessment.", type: 'behavior', category: 'Action', source: 'Taleb' },
+            { text: "Be Skeptical Where It Matters: Exercise skepticism towards claims that carry potential for large-scale harm (e.g., systemic financial models, large-scale environmental interventions, GMOs), not just trivial matters or things you can't affect (like existence of God).", type: 'behavior', category: 'Mindset', source: 'Taleb' },
+            { text: "Understand Convexity/Concavity: Recognize how systems respond non-linearly to stress or inputs; seek convex payoffs (benefit more from upside than hurt by downside) and avoid concave exposures.", type: 'behavior', category: 'Systems Thinking', source: 'Taleb' },
+            { text: "Focus on Your Craft (Dentist stick to Dentistry): Avoid dabbling in high-risk domains outside your expertise (like trading, startup investing) with money you can't afford to lose.", type: 'behavior', category: 'Decision Making', source: 'Taleb' },
+            { text: "Become an Autodidact: Prioritize self-directed learning (reading widely, especially timeless texts) over formal schooling for deeper understanding and unique knowledge. Aim for lowest passing grades.", type: 'behavior', category: 'Learning', source: 'Taleb' },
+            { text: "Care About Reputation Selectively: Focus on the opinions of those you respect or who understand the subject, not the general public or haters (Robustness vs Fragility aphorism).", type: 'behavior', category: 'Mindset', source: 'Taleb' },
+            { text: "Embrace Sacrifice and Honor: View taking risks for a purpose or for others (having skin in the game) as a core part of a meaningful life, rather than pure hedonism.", type: 'behavior', category: 'Mindset', source: 'Taleb' },
+            { text: "Use Inverse Role Models: Identify people you don't want to be like (or who fail in specific ways) and actively avoid their traits or mistakes.", type: 'behavior', category: 'Learning', source: 'Taleb' },
+            { text: "Identify Control Variables: Focus on understanding the key variables that govern a complex system's behavior (like steering wheel/brakes for a car) rather than mapping all variables.", type: 'behavior', category: 'Analysis', source: 'Bar-Yam' },
+            { text: "Recognize Phase Transitions: Understand that systems can shift abruptly from stable to unstable regimes with small changes in parameters (like adding long-range travel impacting pandemics).", type: 'behavior', category: 'Systems Thinking', source: 'Bar-Yam' },
+            { text: "Act at the Relevant Scale: If control at the individual level fails (e.g., contact tracing), escalate to controlling the system at a higher level (e.g., community level).", type: 'behavior', category: 'Strategy', source: 'Bar-Yam' },
+            { text: "Understand the Power of Zero: Recognize that zero cases is a fundamentally different state (R doesn't matter) than any non-zero number of cases in a contagious process.", type: 'behavior', category: 'Systems Thinking', source: 'Bar-Yam' },
+            { text: "Communicate Goals Clearly: Recognize that for community action (like pandemic response), clear communication of the goal (e.g., elimination) is a primary role of government.", type: 'behavior', category: 'Interaction', source: 'Bar-Yam' },
+            { text: "Prioritize Understanding Relationships over Parts: Recognize that collective behaviors arise from interactions and dependencies, not just component properties.", type: 'behavior', category: 'Mindset', source: 'Bar-Yam' },
+            { text: "Acknowledge Indirect Effects: Understand that actions in complex systems often have non-obvious, distant consequences due to interdependence.", type: 'behavior', category: 'Systems Thinking', source: 'Bar-Yam' },
+            { text: "Match System Complexity to Task Complexity: Ensure the responding system (individual, team, organization) has sufficient complexity (variety of actions) to handle the complexity of the environment or task.", type: 'behavior', category: 'Strategy', source: 'Bar-Yam' },
+            { text: "Recognize Universality: Identify common patterns and principles that apply across diverse complex systems, despite differing details.", type: 'behavior', category: 'Analysis', source: 'Bar-Yam' },
+            { text: "Focus on Large-Scale Behaviors: Prioritize understanding and influencing the most important, large-scale dynamics of a system rather than getting lost in fine-scale details.", type: 'behavior', category: 'Analysis', source: 'Bar-Yam' },
+            { text: "Understand Scale Tradeoffs: Recognize the tradeoff between large-scale coherence (simpler fine structure) and fine-scale complexity (less large-scale coherence).", type: 'behavior', category: 'Systems Thinking', source: 'Bar-Yam' },
+            { text: "Distinguish Between Large-Scale and Complex Challenges: Use large, coordinated forces for large-scale problems, but diverse, localized actions for complex problems.", type: 'behavior', category: 'Strategy', source: 'Bar-Yam' },
+            { text: "Keep Thinking Apparatus Engaged Across Domains: Apply deep thinking and principle-based reasoning to practical/business problems, not just scientific ones.", type: 'behavior', category: 'Mindset', source: 'Wolfram' },
+            { text: "Ask Your Own Questions: Don't just solve problems given to you; invent and explore your own questions, regardless of whether they seem 'answerable' or conventional.", type: 'behavior', category: 'Learning', source: 'Wolfram' },
+            { text: "Seek Foundational Understanding: Aim to truly understand things from first principles, which makes building upon that knowledge easier.", type: 'behavior', category: 'Learning', source: 'Wolfram' },
+            { text: "Maintain Intellectual Independence: Pursue ideas you find interesting, regardless of mainstream trends or feedback.", type: 'behavior', category: 'Mindset', source: 'Wolfram' },
+            { text: "Identify Primitives: When building complex systems (like computational language), drill down to identify the fundamental components or concepts.", type: 'behavior', category: 'Analysis', source: 'Wolfram' },
+            { text: "Develop Intuition through Exposure: Recognize that deep domain expertise involves intuition built through experience, which can't always be derived from facts alone.", type: 'behavior', category: 'Learning', source: 'Wolfram' },
+            { text: "Acknowledge Computational Irreducibility: Understand that many processes, even with simple rules, cannot be predicted faster than simulating them. Accept unpredictability.", type: 'behavior', category: 'Systems Thinking', source: 'Wolfram' },
+            { text: "Recognize Observer Dependence: Understand that our perception of the universe and its laws is shaped by our nature as observers (our scale, senses, cognitive limits).", type: 'behavior', category: 'Epistemology', source: 'Wolfram' },
+            { text: "Seek Pockets of Reducibility: While much is irreducible, actively look for patterns or principles that allow prediction or understanding within specific contexts.", type: 'behavior', category: 'Analysis', source: 'Wolfram' },
+            { text: "Value Explanations over Justification: Recognize that knowledge progresses through conjecture and criticism (finding better explanations), not by justifying theories or seeking confirmation.", type: 'behavior', category: 'Epistemology', source: 'Deutsch' },
+            { text: "Embrace Fallibilism: Accept that all knowledge is conjectural and potentially wrong; don't be embarrassed by errors, see them as opportunities for progress.", type: 'behavior', category: 'Mindset', source: 'Deutsch' },
+            { text: "Understand the Limits of Prediction: Recognize that the future is inherently unpredictable when influenced by the growth of knowledge.", type: 'behavior', category: 'Epistemology', source: 'Deutsch' },
+            { text: "Prioritize Problem-Solving: Focus on creating knowledge to solve problems, understanding that progress makes us capable of addressing unforeseen future threats.", type: 'behavior', category: 'Strategy', source: 'Deutsch' },
+            { text: "Distinguish Explanation from Prophecy: Base predictions on good explanations (hard to vary theories that solve problems), not mere extrapolation or unjustified belief.", type: 'behavior', category: 'Decision Making', source: 'Deutsch' },
+            { text: "Value Criticism and Debate: Understand that disagreement and debate improve understanding and arguments, even if they don't lead to immediate consensus.", type: 'behavior', category: 'Interaction', source: 'Deutsch' },
+            { text: "Reject Relativism (Myth of the Framework): Engage with differing viewpoints directly; progress doesn't require a pre-existing shared framework.", type: 'behavior', category: 'Mindset', source: 'Deutsch' },
+            { text: "Distinguish Probability Interpretations: Understand the difference between objective properties (propensities) and subjective beliefs (credences); avoid Bayesian epistemology's conflation.", type: 'behavior', category: 'Analysis', source: 'Deutsch' },
+            // --- Ole Peters Insights (Behaviors) ---
+            { text: "Prioritize Time-Average Growth over Ensemble Expectation: In multiplicative dynamics (wealth, populations), focus on optimizing the outcome for a single entity over time, not the average outcome across many entities at one time.", type: 'behavior', category: 'Decision Making', source: 'Peters' },
+            { text: "Recognize Ergodicity Breaking: Understand that time averages and ensemble averages differ for non-ergodic processes (like multiplicative growth), leading to different optimal strategies.", type: 'behavior', category: 'Analysis', source: 'Peters' },
+            { text: "View Insurance Through Time Averages: Understand that insurance can be mutually beneficial because parties with different wealth levels optimize their time-average growth differently, even if expected wealth change is zero-sum.", type: 'behavior', category: 'Analysis', source: 'Peters' },
+            { text: "Interpret Probability Weighting as Rational Caution: Recognize that observed 'biases' like overweighting extreme events might stem from rational agents incorporating uncertainty (e.g., adding error margins) or optimizing for survival/growth over time.", type: 'behavior', category: 'Epistemology', source: 'Peters' },
+            { text: "Apply 'If in Doubt, Don't Go Out': Use this heuristic to avoid potential ruin when facing uncertainty in time-dependent processes, reflecting the importance of survival.", type: 'behavior', category: 'Decision Making', source: 'Peters' },
+
+            // Rituals (Processes & Activities) from Experts
+            { text: "Barbell Strategy Implementation: Structure investments/initiatives to combine extreme safety (e.g., bonds) with multiple high-risk/high-potential speculative bets (e.g., small tail options), avoiding the fragile middle.", type: 'ritual', category: 'Strategy', source: 'Taleb' },
+            { text: "Win-or-Learn Post-Mortems: After any significant performance or project, systematically analyze outcomes by asking: What went well? How can I/we improve? How can I/we help others improve? What else can help the broader system?", type: 'ritual', category: 'Learning', source: 'Taleb' },
+            { text: "Simplify the Battlefield: When overwhelmed, consciously break down complex situations into smaller, more manageable components to regain control.", type: 'ritual', category: 'Action', source: 'Taleb' },
+            { text: "Micro-Wins Momentum Building: Intentionally identify and achieve small, sequential successes to build confidence and maintain progress during difficult or long projects.", type: 'ritual', category: 'Action', source: 'Taleb' },
+            { text: "Apply the Precautionary Principle (Non-Naive): Systematically identify potential systemic, fat-tailed, irreversible risks (e.g., pandemics, GMOs in environment) and take preventative action despite uncertainty. Focus on fat tails, nonlinearity, irreversibility.", type: 'ritual', category: 'Decision Making', source: 'Taleb' },
+            { text: "Tail Hedging (e.g., Universa Strategy): Systematically allocate a small portion of assets to instruments (like far out-of-the-money options) that pay off massively during extreme negative events. Be a 'one-trick pony' - do it purely without mitigation.", type: 'ritual', category: 'Strategy', source: 'Taleb' },
+            { text: "Practice Via Negativa: Regularly identify and remove potential sources of fragility or downside from systems, processes, or life (e.g., remove specific risks from banking).", type: 'ritual', category: 'Strategy', source: 'Taleb' },
+            { text: "Write Undated Resignation Letter: Keep a ready-to-go resignation letter to maintain a sense of agency and Plan B, reducing feelings of being controlled by an employer.", type: 'ritual', category: 'Mindset', source: 'Taleb' },
+            { text: "Use Renormalization Group Method (Conceptually): Identify relevant scales and control variables in complex systems to understand behavior without modeling every detail.", type: 'ritual', category: 'Analysis', source: 'Bar-Yam' },
+            { text: "Implement Green Zone Strategy (Pandemics): Limit travel between regions, suppress outbreaks locally to zero cases, and progressively open up safe 'green zones'.", type: 'ritual', category: 'Strategy', source: 'Bar-Yam' },
+            { text: "Community-Level Intervention (Pandemics): When individual control fails, implement strategies at the community level (e.g., door-to-door checks, community isolation).", type: 'ritual', category: 'Action', source: 'Bar-Yam' },
+            { text: "Implement Border Controls/Lockouts Early (Pandemics): Use border testing and targeted restrictions quickly to prevent the spread of contagious diseases, rather than relying solely on internal lockdowns later.", type: 'ritual', category: 'Systems Thinking', source: 'Bar-Yam' },
+            { text: "Multiscale Analysis: Explicitly study systems by relating descriptions and behaviors across different scales of observation.", type: 'ritual', category: 'Analysis', source: 'Bar-Yam' },
+            { text: "Complexity Profile Analysis: Characterize systems by quantifying the amount of information needed for description as a function of scale.", type: 'ritual', category: 'Analysis', source: 'Bar-Yam' },
+            { text: "Use Evolutionary Processes in Engineering/Design: Where direct design is too complex, create systems that can adapt or evolve towards desired functions (e.g., evolutionary programming, artificial selection).", type: 'ritual', category: 'Strategy', source: 'Bar-Yam' },
+            { text: "Employ Network Analysis: Model system structure and dynamics using network representations (nodes, links, topology) to understand connectivity, robustness, and information flow.", type: 'ritual', category: 'Analysis', source: 'Bar-Yam' },
+            { text: "Explore the Computational Universe Experimentally: Use computation to explore the behavior of simple programs and systems to discover emergent complexity and universal principles.", type: 'ritual', category: 'Learning', source: 'Wolfram' },
+            { text: "Build Tools for Thinking: Create computational tools (like Mathematica/Wolfram Language) to augment the process of discovery and formalization.", type: 'ritual', category: 'Action', source: 'Wolfram' },
+            { text: "Use Computational Language for Communication: Express complex ideas and models in a runnable, computational format for clarity, reproducibility, and deeper understanding.", type: 'ritual', category: 'Interaction', source: 'Wolfram' },
+            { text: "Practice Conjecture and Criticism: Generate bold hypotheses (conjectures) and rigorously attempt to refute them through argument and empirical testing.", type: 'ritual', category: 'Learning', source: 'Deutsch' },
+            { text: "Seek Good Explanations: Focus on finding explanations that are hard to vary while still accounting for the phenomena, rather than seeking confirmation or justification.", type: 'ritual', category: 'Analysis', source: 'Deutsch' },
+            { text: "Identify and Solve Problems: View progress as the process of identifying problems and creating knowledge to solve them.", type: 'ritual', category: 'Strategy', source: 'Deutsch' },
+             // --- Ole Peters Insights (Rituals) ---
+            { text: "Model with Time Averages for Multiplicative Processes: Use time-average growth rate calculations (ergodicity economics) instead of/alongside expected value when analyzing systems with multiplicative dynamics (e.g., wealth growth, insurance).", type: 'ritual', category: 'Analysis', source: 'Peters' },
+            { text: "Account for Model Mismatch Explicitly: When observing behavior that seems irrational (like probability weighting), consider if it stems from the actor using a different (potentially more cautious or time-focused) model than the observer.", type: 'ritual', category: 'Analysis', source: 'Peters' }
+        ];
+
+        // --- DOM Element References ---
+        const pageContent = document.getElementById('page-content');
+        const pageGraph = document.getElementById('page-graph');
+        const tabContent = document.getElementById('tab-content');
+        const tabGraph = document.getElementById('tab-graph');
+        const yearEl = document.getElementById('year');
+        const behaviorListEl = document.getElementById('behavior-list');
+        const ritualListEl = document.getElementById('ritual-list');
+        const behaviorCountEl = document.getElementById('behavior-count');
+        const ritualCountEl = document.getElementById('ritual-count');
+        const categoryFiltersEl = document.getElementById('category-filters');
+        const sourceFiltersEl = document.getElementById('source-filters');
+        const sortControlsEl = document.getElementById('sort-controls');
+        const sortButtons = sortControlsEl.querySelectorAll('[data-sort]');
+        const graphContainer = document.getElementById('graph-container');
+        const svg = d3.select("#network-graph");
+
+        // --- State Variables ---
+        let currentCategoryFilter = 'all';
+        let currentSourceFilter = 'all';
+        let currentSort = 'default';
+        let originalOrder = [...allItems];
+        let graphInitialized = false;
+        let simulation = null;
+        let graphNodes = [];
+        let graphLinks = [];
+
+        // --- Functions for Content View ---
+        function createItemCard(item) { /* ... (no changes needed) ... */
+             const card = document.createElement('div');
+            card.className = 'item-card';
+            const textNode = document.createTextNode(item.text);
+            card.appendChild(textNode);
+            const tagContainer = document.createElement('div');
+            tagContainer.className = 'tag-container';
+            const categoryTag = document.createElement('span');
+            categoryTag.className = 'category-tag';
+            categoryTag.textContent = item.category;
+            tagContainer.appendChild(categoryTag);
+            const sourceTag = document.createElement('span');
+            sourceTag.className = 'source-tag';
+            sourceTag.textContent = item.source;
+            tagContainer.appendChild(sourceTag);
+            card.appendChild(tagContainer);
+            return card;
+        }
+        function renderItems() { /* ... (no changes needed) ... */
+             let filteredItems = allItems.filter(item =>
+                (currentCategoryFilter === 'all' || item.category === currentCategoryFilter) &&
+                (currentSourceFilter === 'all' || item.source === currentSourceFilter)
+            );
+            let sortedItems = [...filteredItems];
+             if (currentSort === 'az') {
+                sortedItems.sort((a, b) => a.text.localeCompare(b.text));
+            } else if (currentSort === 'za') {
+                sortedItems.sort((a, b) => b.text.localeCompare(a.text));
+            } else {
+                 sortedItems = originalOrder.filter(item => filteredItems.includes(item));
+            }
+            behaviorListEl.innerHTML = '';
+            ritualListEl.innerHTML = '';
+            let behaviorCount = 0;
+            let ritualCount = 0;
+            sortedItems.forEach(item => {
+                const card = createItemCard(item);
+                if (item.type === 'behavior') {
+                    behaviorListEl.appendChild(card);
+                    behaviorCount++;
+                } else if (item.type === 'ritual') {
+                    ritualListEl.appendChild(card);
+                    ritualCount++;
+                }
+            });
+            behaviorCountEl.textContent = `Behaviors Displayed: ${behaviorCount}`;
+            ritualCountEl.textContent = `Rituals Displayed: ${ritualCount}`;
+            if (behaviorCount === 0) behaviorListEl.innerHTML = '<div class="p-4 text-center text-gray-500">No behaviors match filters.</div>';
+            if (ritualCount === 0) ritualListEl.innerHTML = '<div class="p-4 text-center text-gray-500">No rituals match filters.</div>';
+        }
+        function createFilterButtons(element, dataKey, items) { /* ... (no changes needed) ... */
+             const uniqueValues = [...new Set(items.map(item => item[dataKey]))].sort();
+            const allButton = element.querySelector(`[data-${dataKey}="all"]`);
+            uniqueValues.forEach(value => {
+                const button = document.createElement('button');
+                button.className = 'control-button';
+                button.dataset[dataKey] = value;
+                button.textContent = value;
+                button.setAttribute('aria-labelledby', `${dataKey}-label`);
+                button.addEventListener('click', handleFilterClick);
+                element.appendChild(button);
+            });
+             if (allButton) {
+                 allButton.addEventListener('click', handleFilterClick);
+             }
+        }
+        function handleFilterClick(event) { /* ... (no changes needed) ... */
+             const button = event.target;
+            const filterType = Object.keys(button.dataset)[0];
+            const filterValue = button.dataset[filterType];
+            const filterGroup = button.closest('.flex');
+            if (filterType === 'category') currentCategoryFilter = filterValue;
+            else if (filterType === 'source') currentSourceFilter = filterValue;
+            if (filterGroup) {
+                filterGroup.querySelectorAll('.control-button').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset[filterType] === filterValue);
+                });
+            }
+            renderItems();
+        }
+        function handleSortClick(event) { /* ... (no changes needed) ... */
+             currentSort = event.target.dataset.sort;
+            sortButtons.forEach(btn => {
+                 btn.classList.toggle('active', btn.dataset.sort === currentSort);
+            });
+            renderItems();
+        }
+
+        /** Toggles the visibility of a filter group */
+        function toggleFilterGroup(labelContainer) {
+            const button = labelContainer.querySelector('.toggle-button');
+            const controlsId = button.getAttribute('aria-controls');
+            const controlsContainer = document.getElementById(controlsId);
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+            if (isExpanded) {
+                button.setAttribute('aria-expanded', 'false');
+                controlsContainer.classList.add('hidden');
+            } else {
+                button.setAttribute('aria-expanded', 'true');
+                controlsContainer.classList.remove('hidden');
+            }
+        }
+
+
+        // --- Functions for Graph View ---
+        function prepareGraphData() { /* ... (no changes needed) ... */
+             graphNodes = []; // Clear existing nodes
+            graphLinks = []; // Clear existing links
+            const uniqueSources = new Set();
+            const uniqueCategories = new Set();
+            const sourceCategoryLinksMap = new Map(); // Use Map for easier link generation
+
+            allItems.forEach(item => {
+                uniqueSources.add(item.source);
+                uniqueCategories.add(item.category);
+                const linkKey = `${item.source}|${item.category}`; // Unique key for source-category pair
+                if (!sourceCategoryLinksMap.has(linkKey)) {
+                    sourceCategoryLinksMap.set(linkKey, { source: item.source, target: item.category });
+                }
+            });
+
+            uniqueSources.forEach(source => graphNodes.push({ id: source, type: 'source', name: source }));
+            uniqueCategories.forEach(category => graphNodes.push({ id: category, type: 'category', name: category }));
+
+            graphLinks = Array.from(sourceCategoryLinksMap.values()); // Convert map values to array
+            console.log("Graph data prepared:", graphNodes.length, "nodes,", graphLinks.length, "links");
+        }
+        function drawGraph() { /* ... (no changes needed) ... */
+             let width = graphContainer.clientWidth;
+            let height = graphContainer.clientHeight;
+            if (!width || !height || width < 50 || height < 50) {
+                console.warn("Graph container dimensions invalid:", width, height);
+                svg.html('<text x="50%" y="50%" text-anchor="middle" fill="#dc2626">Cannot draw graph. Container too small.</text>');
+                return;
+            }
+            if (graphNodes.length === 0 || graphLinks.length === 0) {
+                prepareGraphData();
+            }
+            svg.attr("viewBox", `0 0 ${width} ${height}`);
+            svg.selectAll("*").remove();
+            simulation = d3.forceSimulation(graphNodes)
+                .force("link", d3.forceLink(graphLinks).id(d => d.id).distance(width * 0.18).strength(0.6))
+                .force("charge", d3.forceManyBody().strength(-width * 0.5))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("x", d3.forceX(width / 2).strength(0.08))
+                .force("y", d3.forceY(height / 2).strength(0.08));
+            const link = svg.append("g")
+                .attr("class", "links")
+                .selectAll("line")
+                .data(graphLinks)
+                .join("line")
+                .attr("class", "link")
+                .attr("id", d => `link-${d.source.id}-${d.target.id}`);
+            const node = svg.append("g")
+                .attr("class", "nodes")
+                .selectAll("g")
+                .data(graphNodes)
+                .join("g")
+                .attr("class", d => `node ${d.type}`)
+                .attr("id", d => `node-${d.id}`)
+                .call(drag(simulation))
+                .on('mouseover', handleMouseOver)
+                .on('mouseout', handleMouseOut);
+            node.append("circle")
+                .attr("r", d => d.type === 'source' ? Math.max(7, width * 0.018) : Math.max(5, width * 0.012))
+                .append("title")
+                .text(d => `${d.type.toUpperCase()}: ${d.name}`);
+            node.append("text")
+                .text(d => d.name)
+                .attr("dy", d => d.type === 'source' ? -(Math.max(7, width * 0.018) + 6) : -(Math.max(5, width * 0.012) + 5))
+                .style("font-size", `${Math.max(9, width * 0.011)}px`);
+            simulation.on("tick", () => {
+                link
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+                node
+                    .attr("transform", d => `translate(${d.x},${d.y})`);
+            });
+            graphInitialized = true;
+            console.log("Graph drawn successfully.");
+        }
+        function drag(simulationInstance) { /* ... (no changes needed) ... */
+             function dragstarted(event, d) {
+                if (!event.active) simulationInstance.alphaTarget(0.3).restart();
+                d.fx = d.x; d.fy = d.y;
+            }
+            function dragged(event, d) {
+                d.fx = event.x; d.fy = event.y;
+            }
+            function dragended(event, d) {
+                if (!event.active) simulationInstance.alphaTarget(0);
+                d.fx = null; d.fy = null;
+            }
+            return d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended);
+        }
+        function handleMouseOver(event, d) { /* ... (no changes needed) ... */
+             const allNodes = svg.selectAll('.node');
+            const allLinks = svg.selectAll('.link');
+            allNodes.style('opacity', 0.3);
+            allLinks.style('stroke-opacity', 0.15);
+            d3.select(this).style('opacity', 1);
+            allLinks.filter(l => l.source === d || l.target === d)
+                .style('stroke-opacity', 0.9)
+                .style('stroke-width', 2.5)
+                .each(function(l) {
+                    allNodes.filter(n => n === l.source || n === l.target)
+                           .style('opacity', 1);
+                });
+        }
+        function handleMouseOut(event, d) { /* ... (no changes needed) ... */
+             svg.selectAll('.node').style('opacity', 1);
+            svg.selectAll('.link')
+               .style('stroke-opacity', 0.7)
+               .style('stroke-width', 2);
+        }
+
+        // --- View Switching Logic ---
+        function showView(viewId) { /* ... (no changes needed) ... */
+             pageContent.classList.add('hidden');
+            pageGraph.classList.add('hidden');
+            tabContent.classList.remove('active');
+            tabGraph.classList.remove('active');
+
+            if (viewId === 'content') {
+                pageContent.classList.remove('hidden');
+                tabContent.classList.add('active');
+                console.log("Switched to Content view");
+            } else if (viewId === 'graph') {
+                pageGraph.classList.remove('hidden');
+                tabGraph.classList.add('active');
+                console.log("Switched to Graph view");
+                setTimeout(() => {
+                    if (!graphInitialized || !simulation) {
+                         console.log("Initializing graph...");
+                         drawGraph();
+                    } else {
+                         console.log("Graph already initialized. Reheating simulation.");
+                         simulation.alphaTarget(0.1).restart();
+                    }
+                }, 50);
+            }
+        }
+
+        // --- Initialization ---
+        function initialize() {
+            console.log("Initializing tool...");
+            yearEl.textContent = new Date().getFullYear();
+
+            // Initialize Content View
+            console.log("Initializing content view elements...");
+            createFilterButtons(categoryFiltersEl, 'category', allItems);
+            createFilterButtons(sourceFiltersEl, 'source', allItems);
+            sortButtons.forEach(button => {
+                button.addEventListener('click', handleSortClick);
+            });
+            renderItems(); // Initial render
+
+            // Prepare graph data once on load
+            prepareGraphData();
+
+            // Add event listeners for tabs
+            tabContent.addEventListener('click', () => showView('content'));
+            tabGraph.addEventListener('click', () => showView('graph'));
+
+            // Add event listeners for filter group toggling (delegated via onclick in HTML)
+            // Note: If adding many groups, event delegation might be more efficient,
+            // but this is simple for three groups.
+
+            // Graph resize handling
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                     if (!pageGraph.classList.contains('hidden')) {
+                         console.log("Window resized, redrawing graph...");
+                         drawGraph();
+                     } else {
+                         console.log("Window resized, graph hidden. Will redraw when shown.");
+                         graphInitialized = false;
+                     }
+                }, 250);
+            });
+
+            // Show the initial view
+            showView('content');
+            console.log("Initialization complete.");
+        }
+
+        // Run initialization when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', initialize);
+
+    </script>
+
+</body>
+</html>
